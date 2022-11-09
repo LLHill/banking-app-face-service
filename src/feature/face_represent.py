@@ -18,13 +18,11 @@ def verify_face(userId, base_img, emotion):
     odbc_faces = store_db.get_data(userId)
     for row in odbc_faces:
         face = pickle.loads(row[0])[0, :, :, :]
-        # test = DeepFace.represent(face, detector_backend = 'ssd', enforce_detection = False)
         img_pair.append([base_img, face])
     verified_dict = DeepFace.verify(img1_path = img_pair, enforce_detection = False, detector_backend = 'ssd', prog_bar = False)
     verified = 0
     for key in verified_dict:
         verified += 1 if verified_dict[key]['verified'] else verified
-    print(verified)
     if (verified/len(verified_dict) > 0.6):
         if (analysis == True):
             return True
@@ -41,26 +39,63 @@ def analyze_face(base_img, emotion):
         return True
     return f'get {dominant_emotion} instead of {emotion}'
 
-
-def detect_face(userId, base_img):
+def process_face(userId, base_img):
+    if userId == None or base_img == None:
+        return 'None'
     try:
-        if base_img == None:
-            raise Exception('The input img is null')
-        if userId == None:
-            raise Exception('The input user is null')
-        # test = DeepFace.represent(base_img, detector_backend = 'ssd', enforce_detection = False)
-        face_img, region = functions.preprocess_face(base_img, detector_backend = 'ssd',return_region = True)
-        x, y, w, h = region
-        max_h,max_w, _ = decode_b64(base_img).shape
-        x, y, w, h = x/max_w, y/max_h, w/max_w, h/max_h
-        store_db.store_data(userId, face_img.dumps())
-        # print(x, y, w, h)
-        # print('-----', max_w, max_h)
-        return [x, y, w, h]
+        result = detect_face(base_img)
+        is_existed, _ = check_existed_face(base_img)
+        if is_existed:
+            store_db.delete_user(userId)
+            return 'Existed'
+        store_db.store_data(userId, result[4].dumps())
+        result.pop()
+        return result
     except Exception as e:
         print(f'Error occurs: {e}')
         return 'None'
 
+
+def detect_face(base_img):
+    # test = DeepFace.represent(base_img, detector_backend = 'ssd', enforce_detection = False)
+    face_img, region = functions.preprocess_face(base_img, detector_backend = 'ssd',return_region = True)
+    x, y, w, h = region
+    max_h,max_w, _ = decode_b64(base_img).shape
+    x, y, w, h = x/max_w, y/max_h, w/max_w, h/max_h
+    return [x, y, w, h, face_img]
+
+def check_existed_face(base_img):
+    faces_arr = []
+    user_list = []
+    img_pair = []
+    all_faces = store_db.get_top3_each_user()
+    user_list.append(all_faces[0][1])
+    for row in all_faces:
+        if row[1] != user_list[-1]:
+            faces_arr.append(img_pair)
+            user_list.append(row[1])
+            img_pair = []
+        face = pickle.loads(row[0])[0, :, :, :]
+        img_pair.append([base_img, face])
+    for faces in faces_arr:
+        verified = 0
+        verified_dict = DeepFace.verify(img1_path = img_pair, enforce_detection = False, detector_backend = 'ssd', prog_bar = False)
+        for key in verified_dict:
+            if verified_dict[key]['verified']:
+                verified += 1 if verified_dict[key]['verified'] else verified
+        if (verified/len(verified_dict) > 0.6):
+            return True, user_list[faces_arr.index(faces)]
+
+    return False, None
+
+    
+def recognize_face(base_img):
+    if base_img == None:
+        return 'None'
+    is_existed, user_id = check_existed_face(base_img)
+    if user_id != None:
+        return user_id
+    return 'None'
 
 def decode_b64(base_img):
     encoded_data = base_img.split(',')[1]

@@ -12,11 +12,16 @@ def init_connect():
 
 @socketio.on('detect')
 def detect(payload):
-    # print('receive messsage')
     userId = payload['userId']
     img = payload['img']
-    face_area = face_represent.detect_face(userId, img)
+    face_area = face_represent.process_face(userId, img)
     emit("detected",{'payload': face_area})
+
+@socketio.on('recognize')
+def detect(payload):
+    img = payload['img']
+    user_id = face_represent.recognize_face(img)
+    emit("recognized",{'payload': user_id})
 
 @socketio.on('verify')
 def verify(payload):
