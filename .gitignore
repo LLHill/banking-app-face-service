@@ -1,1 +1,15 @@
 venv
+data
+src/feature/stored_face/face_0.jpg
+src/feature/stored_face/face_1.jpg
+src/feature/stored_face/face_2.jpg
+src/feature/stored_face/face_3.jpg
+src/feature/stored_face/face_4.jpg
+src/feature/test_img.jpg
+src/feature/GeeksForGeeks.png
+src/feature/face_base.jpg
+src/feature/CroppedFace.jpeg
+src/feature/__pycache__/face_process.cpython-39.pyc
+src/feature/__pycache__/face_represent.cpython-39.pyc
+src/feature/__pycache__/store_db.cpython-39.pyc
+src/feature/__pycache__/face_represent.cpython-39.pyc

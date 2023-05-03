@@ -1,6 +1,8 @@
 import pyodbc
 import pickle
 from deepface import DeepFace
+import cv2
+import numpy as np
 
 
 SERVER = 'localhost,1433'
@@ -26,12 +28,12 @@ def get_data(userId):
     userId)
     return cursor.fetchall()
     
-def get_top3_each_user():
+def get_top6_each_user():
     cursor.execute('''
     SELECT face_img, user_id, rn
     FROM 
     ( SELECT face_img, user_id, id, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY id DESC) AS rn FROM dbo.face) tmp 
-    WHERE rn <= 3
+    WHERE rn <= 6
     ORDER BY user_id
     ''')
     return cursor.fetchall()
@@ -39,7 +41,7 @@ def get_top3_each_user():
 def delete_user(userId):
     print(f'deleting user with id: {userId}')
     cursor.execute('''
-    DELETE FROM dbo.[user] WHERE id = ?
+    DELETE FROM dbo.app_user WHERE id = ?
     ''',
     userId)
     sql_db.commit()
@@ -51,17 +53,13 @@ if __name__ != "__main__":
     'DRIVER={ODBC Driver 17 for SQL Server};SERVER='+SERVER+
     ';DATABASE='+DATABASE+';UID='+USERNAME+';PWD='+ PASSWORD)
     cursor = sql_db.cursor()
-    # face_arr = []
-    # user_list = []
-    # img_pair = []
-    # all_faces = get_top3_each_user()
-    # user_list.append(all_faces[0][1])
+    # num_img = 0
+    # all_faces = get_data(4)
     # for row in all_faces:
-    #     if row[1] != user_list[-1]:
-    #         face_arr.append(img_pair)
-    #         user_list.append(row[1])
-    #         img_pair = []
-    #     img_pair.append('face')
+    #     face = pickle.loads(row[0])[0, :, :, :][:, :, ::-1]
+    #     face *= 255
+    #     cv2.imwrite(f"face_{num_img}.jpg", face)
+    #     num_img +=1
 
     # print(face_arr)
     # print('--------------')
@@ -71,6 +69,3 @@ if __name__ != "__main__":
     #     face = pickle.loads(row[0])[0, :, :, :]
     #     test = DeepFace.represent(face, enforce_detection = False)
     # print('done')
-
-
-
